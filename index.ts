@@ -1,8 +1,10 @@
 import { Elysia } from "elysia";
 import { db } from "./src/db";
 import { users } from "./src/db/schema";
+import { usersRoute } from "./src/routes/users-route";
 
 const app = new Elysia()
+  .use(usersRoute)
   .get("/", () => ({
     status: "ok",
     message: "Server is running successfully!"

@@ -26,3 +26,17 @@ export async function loginUser(email: string, password: string): Promise<string
 
   return token;
 }
+
+export async function logoutUser(token: string): Promise<void> {
+  const [session] = await db
+    .select()
+    .from(sessions)
+    .where(eq(sessions.token, token))
+    .limit(1);
+
+  if (!session) {
+    throw new Error("Unauthorized");
+  }
+
+  await db.delete(sessions).where(eq(sessions.token, token));
+}

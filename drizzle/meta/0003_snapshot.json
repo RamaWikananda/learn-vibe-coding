@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "023b97fe-18cc-4214-9820-ea11a7ff95da",
-  "prevId": "cf9b2263-27ca-4621-a67b-b20bc77621a0",
+  "id": "72d0a61a-f921-4f08-915f-efb018f9f398",
+  "prevId": "a99849eb-6e93-428e-aae3-70de55e9c75e",
   "tables": {
     "sessions": {
       "name": "sessions",
@@ -94,6 +94,23 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
         }
       },
       "indexes": {},

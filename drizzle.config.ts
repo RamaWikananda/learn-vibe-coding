@@ -5,6 +5,6 @@ export default defineConfig({
   schema: "./src/db/schema.ts",
   dialect: "mysql",
   dbCredentials: {
-    url: process.env.DATABASE_URL || "mysql://root:password@localhost:3306/mydb",
+    url: process.env.DATABASE_URL || "mysql://root:@localhost:3306/learn_vibe_coding",
   },
 });

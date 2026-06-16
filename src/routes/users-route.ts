@@ -1,7 +1,28 @@
 import { Elysia, t } from "elysia";
-import { loginUser, logoutUser, getCurrentUser } from "../services/users-service";
+import { registerUser, loginUser, logoutUser, getCurrentUser } from "../services/users-service";
 
 export const userRoutes = new Elysia()
+  .post("/api/users", async ({ body, set }) => {
+    try {
+      const { name, email, password } = body as any;
+
+      if (!name || !email || !password) {
+        set.status = 400;
+        return { data: "Nama, email, dan password wajib diisi" };
+      }
+
+      await registerUser({ name, email, password });
+      
+      set.status = 200; // Success
+      return { data: "OK" };
+    } catch (error: any) {
+      set.status = 400; // Bad request/Conflict
+      if (error.message === "Email sudah terdaftar") {
+        return { data: "Email sudah terdaftar" };
+      }
+      return { data: error.message };
+    }
+  })
   .post("/api/users/login", async ({ body, set }) => {
     try {
       const { email, password } = body;

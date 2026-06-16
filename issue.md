@@ -1,90 +1,64 @@
-# Task: Implement User Login API and Session Management
+# Implementasi Fitur Logout User
 
-## Deskripsi
-Tugas ini bertujuan untuk membuat fitur login pengguna dan manajemen sesi (session). Kamu perlu membuat tabel `sessions` di database untuk menyimpan token login dan membangun endpoint API menggunakan Elysia JS. Ikuti langkah-langkah di bawah ini secara berurutan.
+## Deskripsi Tugas
+Buatlah API endpoint untuk melakukan proses logout pengguna. Jika berhasil, data sesi (berdasarkan token yang diberikan) harus dihapus dari tabel `sessions` di database.
 
-## 1. Database Schema
-Buat tabel `sessions` dengan spesifikasi berikut (gunakan Drizzle ORM atau SQL biasa sesuai konfigurasi project):
+## Spesifikasi API
 
-| Column Name  | Data Type    | Constraints/Defaults                  | Keterangan                                      |
-| ------------ | ------------ | ------------------------------------- | ----------------------------------------------- |
-| `id`         | integer      | `auto increment`, `primary key`       | -                                               |
-| `token`      | varchar(255) | `not null`                            | Berisi UUID (Universally Unique Identifier)     |
-| `user_id`    | integer      | `not null`, `foreign key`             | Relasi ke kolom `id` pada tabel `users`         |
-| `created_at` | timestamp    | `default current_timestamp`           | -                                               |
+**Endpoint**: `DELETE /api/users/logout`
 
-## 2. Spesifikasi API
-Buat endpoint API untuk login user:
+**Headers**: 
+- `Authorization` : `Bearer <token>` (token diambil dari sisi client, yang sebelumnya di-generate pada saat login dan tersimpan di database)
 
-- **Endpoint:** `POST /api/users/login`
-- **Request Body (JSON):**
-  ```json
-  {
-      "email": "rama@localhost",
-      "password": "rahasia"
-  }
-  ```
+**Response Body (Success)**: 
+```json
+{
+    "data" : "Logout Success"
+}
+```
 
-- **Response Body - Success (200):**
-  Mengembalikan token UUID yang berhasil digenerate.
-  ```json
-  {
-      "data": "123e4567-e89b-12d3-a456-426614174000"
-  }
-  ```
+**Response Body (Error - Unauthorized)**: 
+```json
+{
+    "data" : "Unauthorized"
+}
+```
 
-- **Response Body - Error (401 / 400):**
-  Jika email tidak ditemukan atau password tidak cocok:
-  ```json
-  {
-      "data": "Email atau password salah"
-  }
-  ```
+## Struktur Direktori & Aturan Penamaan
+- **Folder `src/routes`**: Berisi file untuk routing Elysia.js.
+  - Penamaan file: Menggunakan format `[nama_modul]-route.ts` (contoh: `users-route.ts`).
+- **Folder `src/services`**: Berisi logic bisnis dari aplikasi.
+  - Penamaan file: Menggunakan format `[nama_modul]-service.ts` (contoh: `users-service.ts`).
 
-## 3. Struktur Folder dan File
-Kode diorganisasikan di dalam folder `src` dengan struktur berikut (gunakan file yang sudah ada atau tambahkan fungsionalitasnya):
+## Tahapan Implementasi
 
-- `src/`
-  - `routes/` (Berisi file routing Elysia JS)
-    - `users-route.ts`
-  - `services/` (Berisi business logic dan koneksi ke database)
-    - `users-service.ts`
+Berikut adalah langkah-langkah yang harus dilakukan untuk mengimplementasikan fitur ini:
 
-## 4. Langkah-Langkah Implementasi (Step-by-Step)
-Agar terstruktur, kerjakan tugas ini mengikuti urutan berikut:
+### 1. Buat Service untuk Logout User (`src/services/users-service.ts`)
+- Buka file `src/services/users-service.ts`.
+- Buat sebuah function atau method baru, misalnya `logoutUser`.
+- Function ini menerima parameter `token` (berupa string).
+- **Logic Bisnis:**
+  1. Lakukan eksekusi query hapus (delete) pada tabel `sessions` di database di mana nilai `token` sama dengan parameter yang diinput.
+  2. Pastikan query berhasil menghapus data. Jika ternyata token tidak ditemukan di tabel `sessions` (jumlah baris yang terhapus = 0), maka lemparkan error (throw error) yang menandakan "Unauthorized".
+  3. Jika berhasil terhapus, function tidak perlu mengembalikan data (return void/sukses).
 
-### Step 1: Persiapan Database (Migration & Schema)
-- Buka file schema database project ini (misalnya `src/db/schema.ts`).
-- Tambahkan definisi tabel `sessions` sesuai spesifikasi pada poin 1. Pastikan kolom `user_id` diatur sebagai *foreign key* yang mereferensikan ke kolom `id` di tabel `users`.
-- Jalankan perintah migrasi database agar tabel `sessions` terbuat di database (misal: `bun run db:generate` dan `bun run db:migrate`).
+### 2. Buat Routing untuk Endpoint (`src/routes/users-route.ts`)
+- Buka file `src/routes/users-route.ts`.
+- Import service `logoutUser` yang telah dibuat.
+- Daftarkan endpoint `DELETE /api/users/logout` pada router/instance Elysia.js.
+- **Logic di dalam handler:**
+  1. Ambil nilai dari header `Authorization` pada request.
+  2. Pastikan format header valid, yaitu `Bearer <token>`, lalu ekstrak `<token>`-nya. Jika header kosong atau format salah, langsung lemparkan pesan error "Unauthorized".
+  3. Panggil service `logoutUser` menggunakan token yang telah diekstrak.
+  4. Jika eksekusi service **berhasil**, kembalikan response JSON sesuai dengan format *Response Body (Success)*.
+  5. Jika pemanggilan service **gagal** (karena token tidak ditemukan di database atau tidak valid), tangkap error tersebut (menggunakan try-catch) dan kembalikan response JSON sesuai format *Response Body (Error)* dengan HTTP status code `401 Unauthorized`.
 
-### Step 2: Membuat Service Layer (`src/services/users-service.ts`)
-- Buka file `users-service.ts`.
-- Buat sebuah fungsi baru (misal: `loginUser`) yang menerima input parameter `email` dan `password`.
-- **Pengecekan User:** Di dalam fungsi ini, buat query ke database untuk mencari user berdasarkan `email` tersebut.
-  - Jika data user tidak ditemukan, lemparkan error atau kembalikan response "Email atau password salah".
-- **Verifikasi Password:** Jika user ditemukan, bandingkan teks `password` dari input dengan password yang ada di database (yang sudah di-hash) menggunakan library `bcrypt` atau fungsi bawaan `Bun.password.verify`.
-  - Jika password tidak cocok, lemparkan error "Email atau password salah".
-- **Generate Token & Simpan Session:** Jika password cocok:
-  1. Buat token string menggunakan format UUID (contoh: `crypto.randomUUID()`).
-  2. Insert data ke tabel `sessions` dengan memasukkan `token` dan `user_id` (diambil dari id user yang berhasil diverifikasi).
-- Kembalikan nilai `token` dari service tersebut.
+### 3. Integrasi Route
+- Karena file `users-route.ts` pada umumnya sudah di-register ke router utama aplikasi (seperti di `src/index.ts`), penambahan route baru di dalam file tersebut akan otomatis terbaca. Pastikan saja strukturnya tidak merusak routing yang sudah ada.
 
-### Step 3: Membuat Route Layer (`src/routes/users-route.ts`)
-- Buka file `users-route.ts`.
-- Deklarasikan endpoint `POST /api/users/login` di dalam routing Elysia.
-- Di dalam handler endpoint ini, tangkap request body untuk mengambil nilai `email` dan `password`.
-- Panggil fungsi `loginUser` dari `users-service.ts` dengan meneruskan data email dan password tersebut.
-- Tangani hasil dari service:
-  - Jika berhasil, kembalikan response JSON berisi token: `{ "data": "token_hasil_generate_disini" }`.
-  - Jika gagal (karena kredensial salah), tangkap errornya dan kembalikan response JSON `{ "data": "Email atau password salah" }` dengan status code HTTP 401 atau 400.
-
-### Step 4: Memastikan Route Terdaftar di Aplikasi Utama
-- Jika endpoint ditambahkan di file `users-route.ts` yang sudah ada, dan file tersebut sudah didaftarkan di aplikasi utama (`src/index.ts`), kamu tidak perlu merubah apa-apa di file `index.ts`. Pastikan saja endpoint-nya bisa diakses.
-
-### Step 5: Testing / Pengujian
-- Jalankan server lokal.
-- Lakukan pengujian menggunakan aplikasi HTTP client (Postman, Insomnia, atau Thunder Client).
-- **Skenario 1 (Gagal):** Kirim payload login dengan email yang tidak terdaftar, atau email benar namun password salah. Pastikan API mengembalikan `{ "data": "Email atau password salah" }`.
-- **Skenario 2 (Sukses):** Kirim payload login dengan email dan password yang valid. Pastikan mendapatkan token UUID sebagai response (`{ "data": "..." }`).
-- **Verifikasi Database:** Cek tabel `sessions` di database untuk memastikan data sesi berhasil tersimpan dan field `user_id` menunjuk pada user yang tepat.
+### 4. Testing
+- Uji coba endpoint menggunakan tools seperti Postman, cURL, atau SwaggerUI.
+- Skenario pengujian:
+  - **Skenario Sukses**: Kirim request DELETE dengan menyertakan token yang valid di header. Pastikan response sukses dan periksa di database apakah data di tabel `sessions` dengan token tersebut benar-benar telah terhapus.
+  - **Skenario Gagal**: Kirim request DELETE tanpa menyertakan token, atau gunakan token sembarang/yang sudah dihapus. Pastikan mendapat response error `401 Unauthorized`.
